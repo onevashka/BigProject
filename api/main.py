@@ -1,8 +1,9 @@
 from fastapi import FastAPI
+from todo.router import app as todo_router
 
 
 app = FastAPI()
-app.include_router()
+app.include_router(todo_router)
 
 
 if __name__ == '__main__':
