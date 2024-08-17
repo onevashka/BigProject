@@ -1,18 +1,18 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import  AsyncSession
-from api.database.models import Task
+from database.models import Task
 
 
 
-async def get_task(db: AsyncSession):
+async def get_task_utils(db: AsyncSession):
     query = await db.execute(select(Task))
     tasks = query.scalars().all()
     return tasks
 
 
-async  def create_task(title: str, db: AsyncSession) -> dict:
+async  def create_task_utils(title: str, db: AsyncSession):
     if title:
-        new_task = Task(title=title)
+        new_task = Task(tittle=title)
         db.add(new_task)
         await  db.commit()
         await  db.refresh(new_task)
@@ -27,7 +27,7 @@ async  def create_task(title: str, db: AsyncSession) -> dict:
 
     }
 
-async def delete_task(task_id: str, db: AsyncSession) -> dict:
+async def delete_task_utils(task_id: int, db: AsyncSession):
     task = await db.get(Task,  task_id)
 
     if task:
@@ -37,11 +37,11 @@ async def delete_task(task_id: str, db: AsyncSession) -> dict:
     return {'message': 'Task not found'}
 
 
-async def patch_task(title: str ,task_id: int, db: AsyncSession) -> dict:
+async def patch_task_utils(title: str ,task_id: int, db: AsyncSession):
     old_task = await db.get(Task, task_id)
 
     if old_task:
-        old_task.title = title
+        old_task.tittle = title
         await db.commit()
         await db.refresh(old_task)
         return {'message': 'Task update successfully'}

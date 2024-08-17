@@ -4,8 +4,10 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from api.config import *
-from api.database.db import Base
-from api.database.models import Task
+from database.db import Base as todo_metadata
+from api.auth.models import User, AuthToken
+from api.auth.models import Base as auth_metadata
+from database.models import Task
 
 from alembic import context
 
@@ -29,7 +31,7 @@ config.set_section_option(s, 'DB_NAME', DB_NAME)
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = Base.metadata
+target_metadata = todo_metadata.metadata, auth_metadata.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

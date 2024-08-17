@@ -8,16 +8,16 @@ URL = f'postgresql+asyncpg://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB
 
 Base = declarative_base()
 
-engine = create_async_engine(URL)
+engine = create_async_engine(URL, echo=True)
 
-SessionLocal = sessionmaker(bind=engine, _class = AsyncSession)
+SessionLocal = sessionmaker(bind=engine, class_=AsyncSession)
 
 async def get_db():
+    session = SessionLocal()
     try:
-        session = SessionLocal()
         yield session
     except Exception as e:
-        print(e)
+        raise e
     finally:
         await session.close()
 
