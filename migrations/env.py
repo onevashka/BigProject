@@ -5,7 +5,7 @@ from sqlalchemy import pool
 
 from api.config import *
 from database.db import Base as todo_metadata
-from api.auth.models import User, AuthToken
+from api.auth.models import User
 from api.auth.models import Base as auth_metadata
 from database.models import Task
 

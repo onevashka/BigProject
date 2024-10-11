@@ -1,6 +1,7 @@
 from venv import create
+from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from httpx import delete
 from pyexpat.errors import messages
 
@@ -8,11 +9,16 @@ from database.db import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from .utils import get_task_utils, patch_task_utils, create_task_utils, delete_task_utils
 
+from api.auth.utils import get_current_active_user
+from api.auth.schemas import SUser
+
 app = APIRouter(prefix='/task', tags=['ToDo'])
 
 
 @app.get('/')
-async def get_task(db: AsyncSession = Depends(get_db)):
+async def get_task(current_user: Annotated[SUser, Depends(get_current_active_user)], db: AsyncSession = Depends(get_db)):
+    if not current_user:
+        raise HTTPException(status_code=404, detail='User not found')
     result = await get_task_utils(db=db)
     return result
 

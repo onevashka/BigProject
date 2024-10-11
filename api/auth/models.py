@@ -1,22 +1,20 @@
-from sqlalchemy import Column, String, Integer, ForeignKey
-from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
+from sqlalchemy import Column, String, Boolean, Table, Integer
+from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 
 
 Base: DeclarativeMeta = declarative_base()
-
-class AuthToken(Base):
-    __tablename__ = 'auth_token'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    token = Column(String, unique=True, index=True)
-    user_id = Column(Integer, ForeignKey('user.id'))
 
 
 class User(Base):
     __tablename__ = 'user'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    username = Column(String, unique=True, index=True)
-    password_hash = Column(String)
-    email = Column(String, unique=True, index=True)
+    username = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    full_name = Column(String, nullable=False)
+    disabled = Column(Boolean, default=None)
+
+
+
 

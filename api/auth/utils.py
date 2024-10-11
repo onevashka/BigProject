@@ -1,23 +1,117 @@
+from datetime import timedelta, datetime, timezone
 from typing import Annotated
-from fastapi import Depends, HTTPException, status, Header
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
+import logging
+from fastapi import Depends, FastAPI, status, HTTPException
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm, HTTPBasic
 from database.db import get_db
-from .models import AuthToken, User
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.util import deprecated
+from sqlalchemy import select
+from .schemas import SUser, SUserInDB, Token, TokenData
+from passlib.context import CryptContext
+from .models import User
+import jwt
+from jwt.exceptions import InvalidTokenError
+
+from api.config import SECRET_KEY, ALGORITHM
+
+app = FastAPI()
+
+logger = logging.getLogger(__name__)
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
 
-security = HTTPBasic()
+fake_users_db = {
+    "johndoe": {
+        "username": "johndoe",
+        "full_name": "John Doe",
+        "email": "johndoe@example.com",
+        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
+        "disabled": False,
+    }
+}
 
 
-async def get_user_by_static_auth_token(
-        auth_token: str = Header(alias='x=auth_token'),
-        db: AsyncSession = Depends(get_db)
-) -> str:
-    result_db = await db.get(AuthToken, auth_token)
 
-    if not result_db:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid authentication token')
 
-    user = await db.get(User, result_db.user_id)
-    return f'Hello, {user.username}'
 
+
+
+
+
+
+async def get_user(db: AsyncSession, username: str):
+    query = select(User).filter(User.username == username)
+    result = await db.execute(query)
+    user = result.scalars().first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return SUserInDB(username=user.username, email=user.email, full_name=user.full_name,
+                     hashed_password=user.hashed_password, disabled=user.disabled)
+
+
+#--------------- Hashed password functions
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+
+async def authenticate_user(db: AsyncSession, username: str, password: str):
+    user = await get_user(db, username)
+    if not user:
+        return False
+    if not verify_password(password, user.hashed_password):
+        return False
+
+    return user
+
+#----------------------------------------------------------------
+
+#----------------- JWT Authentication
+
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+    to_encode.update({'exp' : expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: AsyncSession = Depends(get_db)):
+    print('ghfghfhfghgfhfghfhgfhfghfghfghfghfg')
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        token_data = TokenData(username=username)
+    except InvalidTokenError:
+        raise credentials_exception
+    user = await get_user(db, username=token_data.username)
+    if user is None:
+        raise credentials_exception
+    print(user)
+    print('sdfsdfsdfsdfsdfdsfsdfdfsfsdfdsfdsfsdfdsfsdfsdfsfdsfsdfdsfdsffsdfs')
+    return user
+
+async def get_current_active_user(current_user: Annotated[SUser, Depends(get_current_user)]):
+    logger.info(f"Current user in get_current_active_user: {current_user}")
+    if current_user.disabled:
+        raise HTTPException(status_code=400, detail='Inactive user')
+    return current_user

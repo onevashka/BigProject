@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
-import os 
+import os
+from datetime import timedelta
 
 
 load_dotenv()
@@ -11,4 +12,8 @@ DB_PASSWORD = os.getenv('DB_PASSWORD')
 DB_USERNAME = os.getenv('DB_USERNAME')
 DB_NAME =os.getenv('DB_NAME')
 
-print(DB_NAME, DB_PORT, DB_HOST, DB_USERNAME, DB_PASSWORD)
+
+SECRET_KEY = os.getenv('SECRET_KEY')
+ALGORITHM = os.getenv('ALGORITHM')
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES'))
+
