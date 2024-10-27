@@ -1,6 +1,5 @@
 from inspect import stack
 from typing import Annotated
-
 from alembic.util import status
 from fastapi import APIRouter, Depends, HTTPException, status
 from .utils import oauth2_scheme, get_current_user,get_current_active_user, \
@@ -21,9 +20,6 @@ app = APIRouter(tags=['auth'])
 @app.get("/user/me")
 async def read_items(current_user: Annotated[SUser, Depends(get_current_active_user)]):
     return current_user
-
-
-
 
 
 @app.post('/token', response_model=None)

@@ -1,45 +1,21 @@
+import jwt
 from datetime import timedelta, datetime, timezone
 from typing import Annotated
-import logging
-from fastapi import Depends, FastAPI, status, HTTPException
+from fastapi import Depends, FastAPI, status, HTTPException, APIRouter
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm, HTTPBasic
 from database.db import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.util import deprecated
 from sqlalchemy import select
 from .schemas import SUser, SUserInDB, Token, TokenData
 from passlib.context import CryptContext
 from .models import User
-import jwt
 from jwt.exceptions import InvalidTokenError
-
 from api.config import SECRET_KEY, ALGORITHM
 
-app = FastAPI()
-
-logger = logging.getLogger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
-
-
-fake_users_db = {
-    "johndoe": {
-        "username": "johndoe",
-        "full_name": "John Doe",
-        "email": "johndoe@example.com",
-        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
-        "disabled": False,
-    }
-}
-
-
-
-
-
-
-
 
 
 
@@ -110,8 +86,8 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: As
     print('sdfsdfsdfsdfsdfdsfsdfdfsfsdfdsfdsfsdfdsfsdfsdfsfdsfsdfdsfdsffsdfs')
     return user
 
+
 async def get_current_active_user(current_user: Annotated[SUser, Depends(get_current_user)]):
-    logger.info(f"Current user in get_current_active_user: {current_user}")
     if current_user.disabled:
         raise HTTPException(status_code=400, detail='Inactive user')
     return current_user
